@@ -1,0 +1,288 @@
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-header .subtitle {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.analytics-section {
+  margin-bottom: 3rem;
+}
+
+.analytics-section h2 {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.analytics-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.analytics-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-icon {
+  font-size: 2.5rem;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-label {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-content h3 {
+  margin: 0;
+  font-size: 2rem;
+  color: #333;
+}
+
+.analytics-card.total {
+  border-left: 4px solid #667eea;
+}
+
+.analytics-card.reported {
+  border-left: 4px solid #5cb85c;
+}
+
+.analytics-card.acknowledged {
+  border-left: 4px solid #5bc0de;
+}
+
+.analytics-card.inprogress {
+  border-left: 4px solid #f0ad4e;
+}
+
+.analytics-card.resolved {
+  border-left: 4px solid #28a745;
+}
+
+.ranking-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.ranking-section h2 {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ranking-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.ranking-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.ranking-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ranking-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.rank-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.rank {
+  text-align: center;
+}
+
+.title {
+  font-weight: 600;
+  color: #333;
+}
+
+.priority {
+  text-align: center;
+}
+
+.severity {
+  text-align: center;
+}
+
+.severity-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.75rem;
+  color: white;
+}
+
+.severity-badge.high {
+  background: #dc3545;
+}
+
+.severity-badge.medium {
+  background: #ffc107;
+  color: #333;
+}
+
+.severity-badge.low {
+  background: #28a745;
+}
+
+.upvotes {
+  text-align: center;
+}
+
+.status {
+  text-align: center;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.75rem;
+  color: white;
+  background: #6c757d;
+}
+
+.status-badge.reported {
+  background: #5cb85c;
+}
+
+.status-badge.acknowledged {
+  background: #5bc0de;
+}
+
+.status-badge.in_progress {
+  background: #f0ad4e;
+}
+
+.status-badge.resolved {
+  background: #28a745;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f0f0f0;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #721c24;
+}
+
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ranking-section {
+    padding: 1rem;
+  }
+
+  .ranking-table th,
+  .ranking-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .title {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
