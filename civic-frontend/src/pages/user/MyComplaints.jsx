@@ -12,27 +12,8 @@ function MyComplaints() {
       try {
         setLoading(true);
         setError('');
-        const res = await issuesAPI.getAllIssues();
-        const allIssues = res.data?.data || res.data || [];
-        // Filter on client: issues reported by current user (token subject)
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setIssues([]);
-          return;
-        }
-        const [, payload] = token.split('.');
-        let userId = null;
-        try {
-          const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-          const decoded = JSON.parse(decodeURIComponent(escape(json)));
-          userId = decoded.userId;
-        } catch {
-          userId = null;
-        }
-        const mine = userId
-          ? allIssues.filter((i) => i.reportedBy?._id === userId)
-          : allIssues;
-        setIssues(mine);
+        const res = await issuesAPI.getMyIssues();
+        setIssues(res.data?.data || res.data || []);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load complaints');
       } finally {

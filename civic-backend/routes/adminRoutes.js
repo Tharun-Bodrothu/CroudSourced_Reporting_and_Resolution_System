@@ -5,6 +5,7 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 const Issue = require("../models/Issue");
 const User = require("../models/User");
 const Department = require("../models/Department");
+const { createDepartmentAdmin, setUserActive } = require("../controllers/adminController");
 
 // All admin routes require admin role
 router.use(authMiddleware, roleMiddleware("admin"));
@@ -117,6 +118,12 @@ router.get("/users", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Create department admin (super admin)
+router.post("/department-admins", createDepartmentAdmin);
+
+// Activate / deactivate user
+router.put("/users/active", setUserActive);
 
 module.exports = router;
 

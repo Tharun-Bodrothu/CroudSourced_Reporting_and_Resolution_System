@@ -13,8 +13,13 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import ReportIssuePage from './pages/ReportIssuePage';
 import IssuesList from './pages/IssuesList';
+import IssueDetails from './pages/IssueDetails';
 // Role-specific pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+import ManageDepartments from './pages/admin/ManageDepartments';
+import ManageUsers from './pages/admin/ManageUsers';
+import CreateDepartmentAdmin from './pages/admin/CreateDepartmentAdmin';
+import SystemAnalytics from './pages/admin/SystemAnalytics';
 import DepartmentDashboard from './pages/admin/DepartmentDashboard';
 import IssuesFeed from './pages/user/IssuesFeed';
 import MapView from './pages/user/MapView';
@@ -44,6 +49,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <IssuesList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/issues/:id"
+            element={
+              <ProtectedRoute>
+                <IssueDetails />
               </ProtectedRoute>
             }
           />
@@ -94,6 +107,46 @@ function App() {
               <ProtectedRoute>
                 <RoleRoute allowedRoles={["admin"]}>
                   <AdminDashboard />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/departments"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["admin"]}>
+                  <ManageDepartments />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["admin"]}>
+                  <ManageUsers />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/create-department-admin"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["admin"]}>
+                  <CreateDepartmentAdmin />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["admin"]}>
+                  <SystemAnalytics />
                 </RoleRoute>
               </ProtectedRoute>
             }

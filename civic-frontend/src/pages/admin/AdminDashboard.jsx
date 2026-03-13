@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { adminAPI } from '../../services/api';
 
 export default function AdminDashboard() {
@@ -41,6 +42,13 @@ export default function AdminDashboard() {
     <div style={{ padding: 20 }}>
       <h2>Super Admin Dashboard</h2>
       {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
+
+      <div style={{ marginTop: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <Link to="/admin/departments">Manage Departments</Link>
+        <Link to="/admin/create-department-admin">Create Department Admin</Link>
+        <Link to="/admin/users">Manage Users</Link>
+        <Link to="/admin/analytics">System Analytics</Link>
+      </div>
 
       {analytics && (
         <section style={{ marginTop: 16 }}>

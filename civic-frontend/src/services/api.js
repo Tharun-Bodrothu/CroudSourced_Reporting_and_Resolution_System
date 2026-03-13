@@ -46,6 +46,8 @@ export const issuesAPI = {
     });
   },
   getAllIssues: () => API.get('/issues/all'),
+  getMyIssues: () => API.get('/issues/mine'),
+  getIssueById: (id) => API.get(`/issues/${id}`),
   getPriorityRanking: () => API.get('/issues/priority-ranking'),
   getAnalytics: () => API.get('/issues/analytics'),
 };
@@ -57,6 +59,8 @@ export const adminAPI = {
   createDepartment: (payload) => API.post('/admin/departments', payload),
   updateDepartment: (id, payload) => API.put(`/admin/departments/${id}`, payload),
   getUsers: () => API.get('/admin/users'),
+  createDepartmentAdmin: (payload) => API.post('/admin/department-admins', payload),
+  setUserActive: (payload) => API.put('/admin/users/active', payload),
 };
 
 export const departmentAPI = {

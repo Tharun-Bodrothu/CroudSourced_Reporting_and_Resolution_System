@@ -7,6 +7,8 @@ const upload = require("../middleware/upload");
 const {
   createIssue,
   getAllIssues,
+  getMyIssues,
+  getIssueById,
   updateIssueStatus,
   getAnalytics,
   getDepartmentAnalytics,
@@ -51,7 +53,9 @@ router.post(
    ISSUE LISTING
 ===================================================== */
 router.get("/all", authMiddleware, getAllIssues);
+router.get("/mine", authMiddleware, getMyIssues);
 router.get("/priority-ranking", authMiddleware, getPriorityRanking);
+router.get("/:id", authMiddleware, getIssueById);
 
 /* =====================================================
    ANALYTICS

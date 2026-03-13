@@ -4,6 +4,8 @@ const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 const upload = require("../middleware/upload");
 const Issue = require("../models/Issue");
+const IssueStatusHistory = require("../models/IssueStatusHistory");
+const Notification = require("../models/Notification");
 
 // Department admin only
 router.use(authMiddleware, roleMiddleware("department_admin"));
@@ -11,14 +13,14 @@ router.use(authMiddleware, roleMiddleware("department_admin"));
 // GET /api/department/issues - issues for this department
 router.get("/issues", async (req, res) => {
   try {
-    if (!req.user || !req.user.department) {
+    if (!req.user || !req.user.departmentName) {
       return res
         .status(403)
         .json({ message: "Department not set for this user" });
     }
 
     const issues = await Issue.find({
-      department: req.user.department,
+      department: req.user.departmentName,
     }).sort({ createdAt: -1 });
 
     res.json({ data: issues });
@@ -34,19 +36,39 @@ router.put(
   async (req, res) => {
     try {
       const { issueId, status } = req.body;
-      const update = { status };
+      const issue = await Issue.findById(issueId);
+      if (!issue) return res.status(404).json({ message: "Issue not found" });
 
-      if (req.file) {
-        update.afterImage = `/uploads/${req.file.filename}`;
+      // Ensure dept admin can only update their department issues
+      if (req.user?.departmentName && issue.department !== req.user.departmentName) {
+        return res.status(403).json({ message: "Access denied" });
       }
 
-      const issue = await Issue.findByIdAndUpdate(issueId, update, {
-        new: true,
+      const previousStatus = issue.status;
+      issue.status = status;
+      if (req.file) {
+        issue.afterImage = `/uploads/${req.file.filename}`;
+      }
+      await issue.save();
+
+      await IssueStatusHistory.create({
+        issueId: issue._id,
+        previousStatus,
+        newStatus: status,
+        updatedBy: req.user.id,
+        remarks: "Status updated (department)",
       });
 
-      if (!issue) {
-        return res.status(404).json({ message: "Issue not found" });
-      }
+      const type = status === "resolved" ? "issue_resolved" : "status_updated";
+      const title = status === "resolved" ? "Issue resolved" : "Status updated";
+      await Notification.create({
+        user: issue.reportedBy,
+        issue: issue._id,
+        type,
+        title,
+        message: `Issue status changed from ${previousStatus} to ${status}.`,
+        meta: { previousStatus, newStatus: status },
+      });
 
       res.json({ message: "Issue updated", issue });
     } catch (error) {

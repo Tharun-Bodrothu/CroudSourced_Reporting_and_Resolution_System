@@ -1,7 +1,9 @@
 import PriorityBadge from './PriorityBadge';
 import './IssueCard.css';
+import { useNavigate } from 'react-router-dom';
 
 function IssueCard({ issue }) {
+  const navigate = useNavigate();
   const getSeverityColor = (severity) => {
     switch (severity) {
       case 'high':
@@ -16,7 +18,7 @@ function IssueCard({ issue }) {
   };
 
   return (
-    <div className="issue-card">
+    <div className="issue-card" role="button" tabIndex={0} onClick={() => navigate(`/issues/${issue._id}`)} onKeyDown={(e) => e.key === 'Enter' && navigate(`/issues/${issue._id}`)}>
       <div className="card-header">
         <h3>{issue.title || 'Untitled Issue'}</h3>
         <div className="card-badges">

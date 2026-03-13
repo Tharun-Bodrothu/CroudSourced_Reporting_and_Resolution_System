@@ -136,8 +136,8 @@ exports.getAllIssues = async (req, res) => {
   try {
     const query = {};
 
-    if (req.user?.role === "department_admin" && req.user.department) {
-      query.department = req.user.department;
+    if (req.user?.role === "department_admin" && req.user.departmentName) {
+      query.department = req.user.departmentName;
     }
 
 	const issues = await Issue.find(query)
@@ -145,6 +145,50 @@ exports.getAllIssues = async (req, res) => {
       .populate("upvotes", "name");
 
     res.status(200).json({ data: issues });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/* =====================================================
+   GET MY ISSUES (CITIZEN)
+===================================================== */
+exports.getMyIssues = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    const issues = await Issue.find({ reportedBy: userId })
+      .populate("reportedBy", "name email")
+      .sort({ createdAt: -1 });
+    res.json({ data: issues });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/* =====================================================
+   GET ISSUE BY ID
+===================================================== */
+exports.getIssueById = async (req, res) => {
+  try {
+    const issueId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(issueId)) {
+      return res.status(400).json({ message: "Invalid issue id" });
+    }
+
+    const issue = await Issue.findById(issueId)
+      .populate("reportedBy", "name email")
+      .populate("upvotes", "name");
+
+    if (!issue) return res.status(404).json({ message: "Issue not found" });
+
+    // Department admins can only view their department issues
+    if (req.user?.role === "department_admin" && req.user.departmentName) {
+      if (issue.department !== req.user.departmentName) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+    }
+
+    res.json({ data: issue });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -240,8 +284,8 @@ exports.getPriorityRanking = async (req, res) => {
   try {
     const query = {};
 
-    if (req.user?.role === "department_admin" && req.user.department) {
-      query.department = req.user.department;
+    if (req.user?.role === "department_admin" && req.user.departmentName) {
+      query.department = req.user.departmentName;
     }
 
     const issues = await Issue.find(query)
@@ -366,8 +410,8 @@ exports.getMapIssues = async (req, res) => {
   try {
     const query = {};
 
-    if (req.user?.role === "department_admin" && req.user.department) {
-      query.department = req.user.department;
+    if (req.user?.role === "department_admin" && req.user.departmentName) {
+      query.department = req.user.departmentName;
     }
 
     const issues = await Issue.find(query).select(
@@ -385,12 +429,12 @@ exports.getMapIssues = async (req, res) => {
 ===================================================== */
 exports.getDepartmentIssues = async (req, res) => {
   try {
-    if (!req.user || !req.user.department) {
+    if (!req.user || !req.user.departmentName) {
       return res.status(403).json({ message: "Department not set for user" });
     }
 
 	const issues = await Issue.find({
-      department: req.user.department,
+      department: req.user.departmentName,
     }).populate("reportedBy", "name");
 
     res.status(200).json({ data: issues });
