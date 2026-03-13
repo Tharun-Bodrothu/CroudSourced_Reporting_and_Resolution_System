@@ -170,7 +170,7 @@ function ReportIssuePage() {
         </div>
 
         <aside className="report-right">
-          <div className="info-card">
+          {/* <div className="info-card">
             <h3>Tips for a useful report</h3>
             <ul>
               <li>Provide a concise title and a detailed description (20+ chars).</li>
@@ -178,7 +178,7 @@ function ReportIssuePage() {
               <li>Select an accurate category and department to speed up resolution.</li>
               <li>We use this information to prioritize issues—be concise and factual.</li>
             </ul>
-          </div>
+          </div> */}
         </aside>
       </div>
     </div>
