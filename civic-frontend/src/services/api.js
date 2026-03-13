@@ -50,4 +50,19 @@ export const issuesAPI = {
   getAnalytics: () => API.get('/issues/analytics'),
 };
 
+export const adminAPI = {
+  getAnalytics: () => API.get('/admin/analytics'),
+  getIssues: () => API.get('/admin/issues'),
+  getDepartments: () => API.get('/admin/departments'),
+  createDepartment: (payload) => API.post('/admin/departments', payload),
+  updateDepartment: (id, payload) => API.put(`/admin/departments/${id}`, payload),
+  getUsers: () => API.get('/admin/users'),
+};
+
+export const departmentAPI = {
+  getMyIssues: () => API.get('/department/issues'),
+  updateIssueStatus: (formData) =>
+    API.put('/department/update-status', formData),
+};
+
 export default API;

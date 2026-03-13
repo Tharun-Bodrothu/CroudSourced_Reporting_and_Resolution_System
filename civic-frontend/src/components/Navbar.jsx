@@ -1,8 +1,7 @@
 import './Navbar.css';
-
 import { Link, useNavigate } from 'react-router-dom';
-import './Navbar.css';
 import { getUserFromToken, isTokenValid } from '../services/auth';
+import NotificationsBell from './NotificationsBell';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -39,6 +38,7 @@ function Navbar() {
               {user.role === 'department_admin' && (
                 <Link to="/department" className="nav-link">Department</Link>
               )}
+              <NotificationsBell />
               <button onClick={handleLogout} className="nav-link logout-btn">
                 Logout
               </button>

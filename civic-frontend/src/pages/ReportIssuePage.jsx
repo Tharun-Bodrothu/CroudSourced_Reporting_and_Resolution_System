@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { issuesAPI } from "../services/api";
 import "./ReportIssuePage.css";
@@ -11,11 +11,28 @@ function ReportIssuePage() {
   const [issueType, setIssueType] = useState("");
   const [department, setDepartment] = useState("");
   const [severity, setSeverity] = useState("medium");
+  const [coords, setCoords] = useState({ lat: 17.6868, lng: 83.2185 });
   const [photo, setPhoto] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setCoords({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        },
+        () => {
+          // keep default coords on error
+        }
+      );
+    }
+  }, []);
 
   const validate = () => {
     if (!descriptionText.trim()) return "Description is required";
@@ -71,8 +88,8 @@ function ReportIssuePage() {
       // Location fields as the backend expects nested keys
       form.append("location[area]", "User reported area");
       form.append("location[address]", "Not specified");
-      form.append("location[coordinates][lat]", 17.6868);
-      form.append("location[coordinates][lng]", 83.2185);
+      form.append("location[coordinates][lat]", coords.lat);
+      form.append("location[coordinates][lng]", coords.lng);
 
       if (photo) form.append("photo", photo);
 
