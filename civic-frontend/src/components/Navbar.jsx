@@ -30,6 +30,7 @@ function Navbar() {
                   <Link to="/feed" className="nav-link">Feed</Link>
                   <Link to="/map" className="nav-link">Map</Link>
                   <Link to="/report" className="nav-link">Report Issue</Link>
+                  <Link to="/my-complaints" className="nav-link">My Complaints</Link>
                 </>
               )}
               {user.role === 'admin' && (

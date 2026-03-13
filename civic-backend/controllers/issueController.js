@@ -1,8 +1,25 @@
 const Issue = require("../models/Issue");
 const Comment = require("../models/Comment");
 const IssueStatusHistory = require("../models/IssueStatusHistory");
+const Notification = require("../models/Notification");
 const { analyzeIssue } = require("../services/aiService");
 const mongoose = require("mongoose");
+
+// Simple deterministic routing fallback: map categories/types to departments
+const CATEGORY_TO_DEPARTMENT = {
+  Pothole: "Roads Department",
+  "Road Damage": "Roads Department",
+  Garbage: "Sanitation Department",
+  Sanitation: "Sanitation Department",
+  Streetlight: "Electricity Department",
+  "Street Light": "Electricity Department",
+};
+
+function mapCategoryToDepartment(issueCategory, issueType) {
+  if (issueType && CATEGORY_TO_DEPARTMENT[issueType]) return CATEGORY_TO_DEPARTMENT[issueType];
+  if (issueCategory && CATEGORY_TO_DEPARTMENT[issueCategory]) return CATEGORY_TO_DEPARTMENT[issueCategory];
+  return "Public Works";
+}
 
 /* =====================================================
    CREATE ISSUE
@@ -71,13 +88,18 @@ exports.createIssue = async (req, res) => {
       };
     }
 
+    const routedDepartment = mapCategoryToDepartment(
+      aiData.issueCategory,
+      aiData.issueType
+    );
+
     // Create Issue
-	const newIssue = await Issue.create({
+    const newIssue = await Issue.create({
       title: aiData.title,
       descriptionText,
       issueCategory: aiData.issueCategory,
       issueType: aiData.issueType,
-      department: aiData.department,
+      department: routedDepartment,
       severity: aiData.severity,
       priorityScore: aiData.priorityScore,
       aiSummary: aiData.aiSummary,
@@ -85,7 +107,16 @@ exports.createIssue = async (req, res) => {
       location,
       reportedBy: req.user.userId,
       originalReporter: req.user.userId,
-      status: "reported"
+      status: "reported",
+    });
+
+    // Notification: complaint submitted
+    await Notification.create({
+      user: req.user.userId,
+      issue: newIssue._id,
+      type: "complaint_submitted",
+      title: "Complaint submitted",
+      message: "Your civic issue has been submitted successfully.",
     });
 
     res.status(201).json({
@@ -143,6 +174,20 @@ exports.updateIssueStatus = async (req, res) => {
       newStatus: status,
       updatedBy: req.user.id,
       remarks: "Status updated",
+    });
+
+    // Notification: status updated / issue resolved
+    const type =
+      status === "resolved" ? "issue_resolved" : "status_updated";
+    const title =
+      status === "resolved" ? "Issue resolved" : "Status updated";
+    await Notification.create({
+      user: issue.reportedBy,
+      issue: issue._id,
+      type,
+      title,
+      message: `Issue status changed from ${previousStatus} to ${status}.`,
+      meta: { previousStatus, newStatus: status },
     });
 
     res.status(200).json({
@@ -278,6 +323,17 @@ exports.addComment = async (req, res) => {
       "user",
       "name"
     );
+
+    // Notification: new comment to issue owner (if different user)
+    if (issue.reportedBy && issue.reportedBy.toString() !== req.user.id) {
+      await Notification.create({
+        user: issue.reportedBy,
+        issue: issue._id,
+        type: "new_comment",
+        title: "New comment on your issue",
+        message: text,
+      });
+    }
 
     res.status(201).json({ comment: populated });
   } catch (error) {

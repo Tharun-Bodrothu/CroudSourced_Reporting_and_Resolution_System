@@ -18,6 +18,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import DepartmentDashboard from './pages/admin/DepartmentDashboard';
 import IssuesFeed from './pages/user/IssuesFeed';
 import MapView from './pages/user/MapView';
+import MyComplaints from './pages/user/MyComplaints';
 
 function App() {
   return (
@@ -63,6 +64,16 @@ function App() {
               <ProtectedRoute>
                 <RoleRoute allowedRoles={["user"]}>
                   <MapView />
+                </RoleRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-complaints"
+            element={
+              <ProtectedRoute>
+                <RoleRoute allowedRoles={["user"]}>
+                  <MyComplaints />
                 </RoleRoute>
               </ProtectedRoute>
             }
