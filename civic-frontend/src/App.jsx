@@ -6,6 +6,7 @@ import './App.css';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleRoute from './components/RoleRoute';
+import RoleBasedRedirect from './components/RoleBasedRedirect';
 
 // Pages
 import LoginPage from './pages/LoginPage';
@@ -21,7 +22,7 @@ import ManageUsers from './pages/admin/ManageUsers';
 import CreateDepartmentAdmin from './pages/admin/CreateDepartmentAdmin';
 import SystemAnalytics from './pages/admin/SystemAnalytics';
 import DepartmentDashboard from './pages/admin/DepartmentDashboard';
-import IssuesFeed from './pages/user/IssuesFeed';
+// import IssuesFeed from './pages/user/IssuesFeed';
 import MapView from './pages/user/MapView';
 import MyComplaints from './pages/user/MyComplaints';
 
@@ -61,7 +62,7 @@ function App() {
             }
           />
           {/* User-specific views */}
-          <Route
+          {/* <Route
             path="/feed"
             element={
               <ProtectedRoute>
@@ -70,7 +71,7 @@ function App() {
                 </RoleRoute>
               </ProtectedRoute>
             }
-          />
+          /> */}
           <Route
             path="/map"
             element={
@@ -164,7 +165,14 @@ function App() {
           />
 
           {/* Default route */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route
+  path="/"
+  element={
+    <ProtectedRoute>
+      <RoleBasedRedirect />
+    </ProtectedRoute>
+  }
+/>
         </Routes>
       </main>
     </BrowserRouter>

@@ -1,106 +1,47 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { adminAPI } from '../../services/api';
 
 export default function AdminDashboard() {
-  const [analytics, setAnalytics] = useState(null);
-  const [issues, setIssues] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [analytics, setAnalytics] = useState({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const [analyticsRes, issuesRes, usersRes, deptsRes] = await Promise.all([
-          adminAPI.getAnalytics(),
-          adminAPI.getIssues(),
-          adminAPI.getUsers(),
-          adminAPI.getDepartments(),
-        ]);
-        setAnalytics(analyticsRes.data?.data || analyticsRes.data || null);
-        setIssues(issuesRes.data?.data || issuesRes.data || []);
-        setUsers(usersRes.data?.data || usersRes.data || []);
-        setDepartments(deptsRes.data?.data || deptsRes.data || []);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load admin dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    fetchData();
   }, []);
 
-  if (loading) {
-    return <div style={{ padding: 20 }}>Loading admin dashboard...</div>;
-  }
+  const fetchData = async () => {
+    try {
+      const res = await adminAPI.getAnalytics();
+      setAnalytics(res.data?.data || res.data || {});
+    } catch (err) {
+      console.error("Admin dashboard error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div style={{ padding: 20 }}>Loading...</div>;
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>Super Admin Dashboard</h2>
-      {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
+      <h1>🛠️ Admin Dashboard</h1>
 
-      <div style={{ marginTop: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <Link to="/admin/departments">Manage Departments</Link>
-        <Link to="/admin/create-department-admin">Create Department Admin</Link>
-        <Link to="/admin/users">Manage Users</Link>
-        <Link to="/admin/analytics">System Analytics</Link>
+      {/* ✅ SYSTEM STATS */}
+      <div style={{ display: 'flex', gap: 20, marginTop: 20 }}>
+        <div>👥 Users: {analytics.totalUsers || 0}</div>
+        <div>🏢 Departments: {analytics.totalDepartments || 0}</div>
+        <div>📋 Issues: {analytics.totalIssues || 0}</div>
       </div>
 
-      {analytics && (
-        <section style={{ marginTop: 16 }}>
-          <h3>System Analytics</h3>
-          <ul>
-            <li>Total Users: {analytics.totalUsers}</li>
-            <li>Total Departments: {analytics.totalDepartments}</li>
-            <li>Total Issues: {analytics.totalIssues}</li>
-          </ul>
-        </section>
-      )}
-
-      <section style={{ marginTop: 24 }}>
-        <h3>Departments</h3>
-        {departments.length === 0 ? (
-          <p>No departments created yet.</p>
-        ) : (
-          <ul>
-            {departments.map((d) => (
-              <li key={d._id}>{d.name} ({d.contactEmail || 'no email'})</li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section style={{ marginTop: 24 }}>
-        <h3>Users</h3>
-        {users.length === 0 ? (
-          <p>No users found.</p>
-        ) : (
-          <ul>
-            {users.map((u) => (
-              <li key={u._id}>{u.name} - {u.email} ({u.role})</li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section style={{ marginTop: 24 }}>
-        <h3>Recent Issues</h3>
-        {issues.length === 0 ? (
-          <p>No issues in the system.</p>
-        ) : (
-          <ul>
-            {issues.slice(0, 10).map((i) => (
-              <li key={i._id}>
-                {i.title || 'Untitled'} - {i.status} ({i.department || 'No dept'})
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {/* ✅ ISSUE STATUS */}
+      <div style={{ marginTop: 30 }}>
+        <h3>Issue Status Overview</h3>
+        <ul>
+          <li>Reported: {analytics.reported || 0}</li>
+          <li>In Progress: {analytics.inProgress || 0}</li>
+          <li>Resolved: {analytics.resolved || 0}</li>
+        </ul>
+      </div>
     </div>
   );
 }
