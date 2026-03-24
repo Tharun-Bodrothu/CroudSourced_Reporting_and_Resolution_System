@@ -224,19 +224,30 @@ exports.getIssueById = async (req, res) => {
 /* =====================================================
    UPDATE ISSUE STATUS
 ===================================================== */
+// controllers/issueController.js — replace updateIssueStatus
+
 exports.updateIssueStatus = async (req, res) => {
   try {
     const { issueId } = req.params;
     const { status } = req.body;
 
     const issue = await Issue.findById(issueId);
+    if (!issue) return res.status(404).json({ message: "Issue not found" });
 
-    if (!issue) {
-      return res.status(404).json({ message: "Issue not found" });
+    // ✅ Department admin: ownership + status whitelist
+    if (req.user.role === "department_admin") {
+      if (issue.department.toString() !== req.user.departmentId) {
+        return res.status(403).json({ message: "Access denied: not your department's issue" });
+      }
+      const allowed = ["acknowledged", "in_progress"];
+      if (!allowed.includes(status)) {
+        return res.status(403).json({ message: `Dept admin can only set: ${allowed.join(", ")}` });
+      }
     }
 
     const previousStatus = issue.status;
     issue.status = status;
+    if (status === "resolved") issue.resolvedAt = new Date();
     await issue.save();
 
     await IssueStatusHistory.create({
@@ -247,29 +258,20 @@ exports.updateIssueStatus = async (req, res) => {
       remarks: "Status updated",
     });
 
-    // Notification: status updated / issue resolved
-    const type =
-      status === "resolved" ? "issue_resolved" : "status_updated";
-    const title =
-      status === "resolved" ? "Issue resolved" : "Status updated";
     await Notification.create({
       user: issue.reportedBy,
       issue: issue._id,
-      type,
-      title,
+      type: status === "resolved" ? "issue_resolved" : "status_updated",
+      title: status === "resolved" ? "Issue resolved" : "Status updated",
       message: `Issue status changed from ${previousStatus} to ${status}.`,
       meta: { previousStatus, newStatus: status },
     });
 
-    res.status(200).json({
-      message: "Issue status updated successfully",
-      issue,
-    });
+    res.status(200).json({ message: "Issue status updated", issue });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
 /* =====================================================
    ANALYTICS
 ===================================================== */

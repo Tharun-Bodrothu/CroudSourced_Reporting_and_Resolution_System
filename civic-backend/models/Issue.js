@@ -9,7 +9,9 @@ const issueSchema = new mongoose.Schema(
     image: String,
     issueCategory: String,
     issueType: String,
-    department: String,
+
+    // ✅ FIXED: was String — must be ObjectId to match what createIssue stores
+    department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
 
     severity: {
       type: String,
@@ -37,7 +39,7 @@ const issueSchema = new mongoose.Schema(
       },
     },
 
-  	reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     originalReporter: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
     status: {
@@ -46,13 +48,12 @@ const issueSchema = new mongoose.Schema(
       default: "reported",
     },
 
-    assignedDepartment: String,
+    // ✅ FIXED: was String — now ObjectId, consistent with department field
+    assignedDepartment: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
     assignedAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     assignedFieldStaff: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
-    upvotes: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "User" }
-    ],
+    upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     upvoteCount: { type: Number, default: 0 },
     commentCount: { type: Number, default: 0 },
 
