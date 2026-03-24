@@ -7,11 +7,14 @@ const userSchema = new mongoose.Schema(
     phone: String,
     password: { type: String, required: true },
 
-	role: {
+    role: {
       type: String,
       enum: ["user", "admin", "department_admin", "field_staff"],
       default: "user",
     },
+
+    // For department_admin / field_staff
+    department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
 
     language: { type: String, default: "English" },
     civicScore: { type: Number, default: 0 },
@@ -33,3 +36,4 @@ const userSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("User", userSchema);
+

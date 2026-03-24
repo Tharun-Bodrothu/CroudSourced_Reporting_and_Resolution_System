@@ -1,8 +1,43 @@
 const Issue = require("../models/Issue");
 const Comment = require("../models/Comment");
 const IssueStatusHistory = require("../models/IssueStatusHistory");
+const Notification = require("../models/Notification");
 const { analyzeIssue } = require("../services/aiService");
 const mongoose = require("mongoose");
+const Department = require("../models/Department");
+
+// Simple deterministic routing fallback: map categories/types to departments
+const CATEGORY_TO_DEPARTMENT = {
+  // Roads
+  Pothole: "Roads",
+  "Road Damage": "Roads",
+  Infrastructure: "Roads",
+
+  // Sanitation
+  Garbage: "Sanitation",
+  Waste: "Sanitation",
+
+  // Electricity
+  Streetlight: "Electricity",
+
+  // Water Supply
+  "Water Leakage": "Water Supply",
+  Maintenance: "Water Supply",
+
+  // Traffic
+  Traffic: "Traffic",
+  "Signal Issue": "Traffic",
+
+  // Environment
+  Pollution: "Environment",
+  Trees: "Environment"
+};
+
+function mapCategoryToDepartment(issueCategory, issueType) {
+  if (issueType && CATEGORY_TO_DEPARTMENT[issueType]) return CATEGORY_TO_DEPARTMENT[issueType];
+  if (issueCategory && CATEGORY_TO_DEPARTMENT[issueCategory]) return CATEGORY_TO_DEPARTMENT[issueCategory];
+  return "Sanitation";
+}
 
 /* =====================================================
    CREATE ISSUE
@@ -71,13 +106,25 @@ exports.createIssue = async (req, res) => {
       };
     }
 
+    const departmentName = mapCategoryToDepartment(
+      aiData.issueCategory,
+      aiData.issueType
+    );
+    
+    // Find department in DB
+    const departmentDoc = await Department.findOne({ name: departmentName });
+    
+    if (!departmentDoc) {
+      return res.status(400).json({ message: "Department not found" });
+    }
+
     // Create Issue
-	const newIssue = await Issue.create({
+    const newIssue = await Issue.create({
       title: aiData.title,
       descriptionText,
       issueCategory: aiData.issueCategory,
       issueType: aiData.issueType,
-      department: aiData.department,
+      department: departmentDoc._id,
       severity: aiData.severity,
       priorityScore: aiData.priorityScore,
       aiSummary: aiData.aiSummary,
@@ -85,7 +132,16 @@ exports.createIssue = async (req, res) => {
       location,
       reportedBy: req.user.userId,
       originalReporter: req.user.userId,
-      status: "reported"
+      status: "reported",
+    });
+
+    // Notification: complaint submitted
+    await Notification.create({
+      user: req.user.userId,
+      issue: newIssue._id,
+      type: "complaint_submitted",
+      title: "Complaint submitted",
+      message: "Your civic issue has been submitted successfully.",
     });
 
     res.status(201).json({
@@ -103,15 +159,17 @@ exports.createIssue = async (req, res) => {
 ===================================================== */
 exports.getAllIssues = async (req, res) => {
   try {
+    console.log("USER:", req.user);
     const query = {};
 
-    if (req.user?.role === "department_admin" && req.user.department) {
-      query.department = req.user.department;
+    if (req.user?.role === "department_admin" && req.user.departmentId) {
+      query.department = req.user.departmentId;
     }
 
-	const issues = await Issue.find(query)
-      .populate("reportedBy", "name email")
-      .populate("upvotes", "name");
+    const issues = await Issue.find(query)
+    .populate("department", "name")   // 🔥 ADD THIS
+    .populate("reportedBy", "name email")
+    .populate("upvotes", "name");
 
     res.status(200).json({ data: issues });
   } catch (error) {
@@ -120,21 +178,76 @@ exports.getAllIssues = async (req, res) => {
 };
 
 /* =====================================================
+   GET MY ISSUES (CITIZEN)
+===================================================== */
+exports.getMyIssues = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    const issues = await Issue.find({ reportedBy: userId })
+      .populate("reportedBy", "name email")
+      .sort({ createdAt: -1 });
+    res.json({ data: issues });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/* =====================================================
+   GET ISSUE BY ID
+===================================================== */
+exports.getIssueById = async (req, res) => {
+  try {
+    const issueId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(issueId)) {
+      return res.status(400).json({ message: "Invalid issue id" });
+    }
+
+    const issue = await Issue.findById(issueId)
+      .populate("reportedBy", "name email")
+      .populate("upvotes", "name");
+
+    if (!issue) return res.status(404).json({ message: "Issue not found" });
+
+    // Department admins can only view their department issues
+    if (req.user?.role === "department_admin" && req.user.department) {
+      if (issue.department.toString() !== req.user.departmentId.toString()) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+    }
+
+    res.json({ data: issue });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/* =====================================================
    UPDATE ISSUE STATUS
 ===================================================== */
+// controllers/issueController.js — replace updateIssueStatus
+
 exports.updateIssueStatus = async (req, res) => {
   try {
     const { issueId } = req.params;
     const { status } = req.body;
 
     const issue = await Issue.findById(issueId);
+    if (!issue) return res.status(404).json({ message: "Issue not found" });
 
-    if (!issue) {
-      return res.status(404).json({ message: "Issue not found" });
+    // ✅ Department admin: ownership + status whitelist
+    if (req.user.role === "department_admin") {
+      if (issue.department.toString() !== req.user.departmentId) {
+        return res.status(403).json({ message: "Access denied: not your department's issue" });
+      }
+      const allowed = ["acknowledged", "in_progress"];
+      if (!allowed.includes(status)) {
+        return res.status(403).json({ message: `Dept admin can only set: ${allowed.join(", ")}` });
+      }
     }
 
     const previousStatus = issue.status;
     issue.status = status;
+    if (status === "resolved") issue.resolvedAt = new Date();
     await issue.save();
 
     await IssueStatusHistory.create({
@@ -145,15 +258,20 @@ exports.updateIssueStatus = async (req, res) => {
       remarks: "Status updated",
     });
 
-    res.status(200).json({
-      message: "Issue status updated successfully",
-      issue,
+    await Notification.create({
+      user: issue.reportedBy,
+      issue: issue._id,
+      type: status === "resolved" ? "issue_resolved" : "status_updated",
+      title: status === "resolved" ? "Issue resolved" : "Status updated",
+      message: `Issue status changed from ${previousStatus} to ${status}.`,
+      meta: { previousStatus, newStatus: status },
     });
+
+    res.status(200).json({ message: "Issue status updated", issue });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
 /* =====================================================
    ANALYTICS
 ===================================================== */
@@ -195,8 +313,8 @@ exports.getPriorityRanking = async (req, res) => {
   try {
     const query = {};
 
-    if (req.user?.role === "department_admin" && req.user.department) {
-      query.department = req.user.department;
+    if (req.user?.role === "department_admin" && req.user.departmentId) {
+      query.department = req.user.departmentId;
     }
 
     const issues = await Issue.find(query)
@@ -279,6 +397,17 @@ exports.addComment = async (req, res) => {
       "name"
     );
 
+    // Notification: new comment to issue owner (if different user)
+    if (issue.reportedBy && issue.reportedBy.toString() !== req.user.id) {
+      await Notification.create({
+        user: issue.reportedBy,
+        issue: issue._id,
+        type: "new_comment",
+        title: "New comment on your issue",
+        message: text,
+      });
+    }
+
     res.status(201).json({ comment: populated });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -310,8 +439,8 @@ exports.getMapIssues = async (req, res) => {
   try {
     const query = {};
 
-    if (req.user?.role === "department_admin" && req.user.department) {
-      query.department = req.user.department;
+    if (req.user?.role === "department_admin" && req.user.departmentId) {
+      query.department = req.user.departmentId;
     }
 
     const issues = await Issue.find(query).select(
@@ -329,13 +458,15 @@ exports.getMapIssues = async (req, res) => {
 ===================================================== */
 exports.getDepartmentIssues = async (req, res) => {
   try {
-    if (!req.user || !req.user.department) {
+    if (!req.user || !req.user.departmentId) {
       return res.status(403).json({ message: "Department not set for user" });
     }
-
-	const issues = await Issue.find({
-      department: req.user.department,
-    }).populate("reportedBy", "name");
+    
+    const issues = await Issue.find({
+      department: req.user.departmentId,
+    })
+    .populate("department", "name")   // 🔥 ADD THIS
+    .populate("reportedBy", "name");
 
     res.status(200).json({ data: issues });
   } catch (error) {

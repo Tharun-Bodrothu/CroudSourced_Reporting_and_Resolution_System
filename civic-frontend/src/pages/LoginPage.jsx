@@ -17,8 +17,22 @@ function LoginPage() {
 
     try {
       const response = await authAPI.login(email, password);
-      localStorage.setItem('token', response.data.token);
-      navigate('/dashboard');
+      const { token, user } = response.data;
+
+      // ✅ Store raw token (no "Bearer " prefix — interceptor adds it)
+      localStorage.setItem('token', token);
+
+      // ✅ Store user object so RoleBasedRedirect and other components can read role
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // ✅ Redirect based on role
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'department_admin') {
+        navigate('/department');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {

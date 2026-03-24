@@ -1,7 +1,10 @@
 import PriorityBadge from './PriorityBadge';
 import './IssueCard.css';
+import { useNavigate } from 'react-router-dom';
 
 function IssueCard({ issue }) {
+  const navigate = useNavigate();
+
   const getSeverityColor = (severity) => {
     switch (severity) {
       case 'high':
@@ -16,7 +19,13 @@ function IssueCard({ issue }) {
   };
 
   return (
-    <div className="issue-card">
+    <div
+      className="issue-card"
+      role="button"
+      tabIndex={0}
+      onClick={() => navigate(`/issues/${issue._id}`)}
+      onKeyDown={(e) => e.key === 'Enter' && navigate(`/issues/${issue._id}`)}
+    >
       <div className="card-header">
         <h3>{issue.title || 'Untitled Issue'}</h3>
         <div className="card-badges">
@@ -39,11 +48,17 @@ function IssueCard({ issue }) {
 
         <div className="card-meta">
           <span className="meta-item">
-            <strong>Department:</strong> {issue.department || 'N/A'}
+            <strong>Department:</strong>{" "}
+            {typeof issue.department === "string"
+              ? issue.department
+              : issue.department?.name || "N/A"}
           </span>
+
           <span className="meta-item">
-            <strong>Status:</strong> {issue.status?.toUpperCase() || 'REPORTED'}
+            <strong>Status:</strong>{" "}
+            {issue.status?.toUpperCase() || "REPORTED"}
           </span>
+
           <span className="meta-item">
             <strong>Upvotes:</strong> {issue.upvoteCount || 0}
           </span>

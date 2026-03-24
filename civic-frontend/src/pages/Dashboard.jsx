@@ -1,159 +1,105 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { issuesAPI } from '../services/api';
-import PriorityBadge from '../components/PriorityBadge';
-import './Dashboard.css';
+import '../styles/civix.css';
 
-function Dashboard() {
-  const [analytics, setAnalytics] = useState({
-    totalIssues: 0,
-    reported: 0,
-    acknowledged: 0,
-    inProgress: 0,
-    resolved: 0,
-  });
-  const [priorityRanking, setPriorityRanking] = useState([]);
+const STATUS_META = {
+  reported:     { label: 'Reported',     bg: '#dcfce7', color: '#166534' },
+  acknowledged: { label: 'Acknowledged', bg: '#dbeafe', color: '#1e40af' },
+  in_progress:  { label: 'In Progress',  bg: '#fef3c7', color: '#92400e' },
+  resolved:     { label: 'Resolved',     bg: '#ede9fe', color: '#4c1d95' },
+  rejected:     { label: 'Rejected',     bg: '#fee2e2', color: '#991b1b' },
+};
+
+export default function Dashboard() {
+  const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    fetchDashboardData();
+    issuesAPI.getMyIssues()
+      .then(r => setIssues(r.data?.data || r.data || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const [analyticsRes, priorityRes] = await Promise.all([
-        issuesAPI.getAnalytics(),
-        issuesAPI.getPriorityRanking(),
-      ]);
+  const total        = issues.length;
+  const reported     = issues.filter(i => i.status === 'reported').length;
+  const inProgress   = issues.filter(i => i.status === 'in_progress').length;
+  const resolved     = issues.filter(i => i.status === 'resolved').length;
+  const acknowledged = issues.filter(i => i.status === 'acknowledged').length;
 
-      setAnalytics(analyticsRes.data?.data || analyticsRes.data || {});
-      setPriorityRanking(priorityRes.data?.data || priorityRes.data || []);
-    } catch (err) {
-      console.error('Dashboard Error:', err);
-      setError(err.response?.data?.message || 'Unable to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="dashboard-container">
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  const statCards = [
+    { lbl: 'Total',        val: total,        cls: 'color-purple' },
+    { lbl: 'Reported',     val: reported,     cls: 'color-green'  },
+    { lbl: 'Acknowledged', val: acknowledged, cls: 'color-blue'   },
+    { lbl: 'In Progress',  val: inProgress,   cls: 'color-amber'  },
+    { lbl: 'Resolved',     val: resolved,     cls: 'color-violet' },
+  ];
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h1>📊 Dashboard</h1>
-        <p className="subtitle">CiviX Issue Management System</p>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-
-      {/* Analytics Cards */}
-      <div className="analytics-section">
-        <h2>Issue Statistics</h2>
-        <div className="analytics-grid">
-          <div className="analytics-card total">
-            <div className="card-icon">📋</div>
-            <div className="card-content">
-              <p className="card-label">Total Issues</p>
-              <h3>{analytics.totalIssues || 0}</h3>
-            </div>
-          </div>
-
-          <div className="analytics-card reported">
-            <div className="card-icon">🆕</div>
-            <div className="card-content">
-              <p className="card-label">Reported</p>
-              <h3>{analytics.reported || 0}</h3>
-            </div>
-          </div>
-
-          <div className="analytics-card acknowledged">
-            <div className="card-icon">👀</div>
-            <div className="card-content">
-              <p className="card-label">Acknowledged</p>
-              <h3>{analytics.acknowledged || 0}</h3>
-            </div>
-          </div>
-
-          <div className="analytics-card inprogress">
-            <div className="card-icon">⚙️</div>
-            <div className="card-content">
-              <p className="card-label">In Progress</p>
-              <h3>{analytics.inProgress || 0}</h3>
-            </div>
-          </div>
-
-          <div className="analytics-card resolved">
-            <div className="card-icon">✅</div>
-            <div className="card-content">
-              <p className="card-label">Resolved</p>
-              <h3>{analytics.resolved || 0}</h3>
-            </div>
-          </div>
+    <div className="cx-page">
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'1rem', marginBottom:'2rem' }}>
+        <div>
+          <h1 style={{ fontFamily:'Syne,sans-serif', fontSize:'1.9rem', fontWeight:800, color:'var(--text1)' }}>
+            Welcome back{user.name ? `, ${user.name.split(' ')[0]}` : ''} 👋
+          </h1>
+          <p style={{ color:'var(--text3)', marginTop:'.25rem' }}>Here's a summary of your reported issues</p>
         </div>
+        <button className="cx-btn cx-btn-primary" onClick={() => navigate('/report')}>+ Report New Issue</button>
       </div>
 
-      {/* Priority Ranking Table */}
-      <div className="ranking-section">
-        <h2>🎯 Priority Ranking</h2>
-        {priorityRanking.length === 0 ? (
-          <div className="no-data">
-            <p>No issues reported yet. Start making a difference!</p>
+      {/* Stat cards */}
+      {loading ? <div className="cx-spinner" /> : (
+        <div className="cx-stat-grid">
+          {statCards.map(c => (
+            <div key={c.lbl} className={`cx-stat-card ${c.cls}`}>
+              <span className="val">{c.val}</span>
+              <span className="lbl">{c.lbl}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Recent issues list */}
+      <div className="cx-card" style={{ padding:'1.5rem' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.25rem' }}>
+          <div className="cx-section-title" style={{ margin:0 }}>Recent Issues</div>
+          <button className="cx-btn cx-btn-ghost" style={{ fontSize:'.85rem' }} onClick={() => navigate('/my-complaints')}>View all →</button>
+        </div>
+
+        {loading ? <div className="cx-spinner" /> : issues.length === 0 ? (
+          <div className="cx-empty">
+            <div className="icon">📝</div>
+            <p>No issues reported yet.</p>
+            <button className="cx-btn cx-btn-primary" style={{ marginTop:'1rem' }} onClick={() => navigate('/report')}>
+              Report your first issue
+            </button>
           </div>
         ) : (
-          <div className="table-wrapper">
-            <table className="ranking-table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Issue Title</th>
-                  <th>Priority</th>
-                  <th>Severity</th>
-                  <th>Upvotes</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {priorityRanking.slice(0, 10).map((issue, index) => (
-                  <tr key={issue._id}>
-                    <td className="rank">
-                      <span className="rank-badge">{index + 1}</span>
-                    </td>
-                    <td className="title">{issue.title || 'Untitled'}</td>
-                    <td className="priority">
-                      <PriorityBadge score={issue.priorityScore || 0} />
-                    </td>
-                    <td className="severity">
-                      <span className={`severity-badge ${issue.severity}`}>
-                        {issue.severity?.toUpperCase() || 'UNKNOWN'}
-                      </span>
-                    </td>
-                    <td className="upvotes">👍 {issue.upvoteCount || 0}</td>
-                    <td className="status">
-                      <span className={`status-badge ${issue.status}`}>
-                        {issue.status?.toUpperCase() || 'REPORTED'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display:'flex', flexDirection:'column', gap:'.6rem' }}>
+            {issues.slice(0, 8).map(issue => {
+              const sm = STATUS_META[issue.status] || { label: issue.status, bg: '#f3f4f6', color: '#374151' };
+              const deptName = typeof issue.department === 'object' ? issue.department?.name : issue.department || 'N/A';
+              return (
+                <div key={issue._id}
+                  onClick={() => navigate(`/issues/${issue._id}`)}
+                  style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'.9rem 1rem', background:'var(--surface2)', borderRadius:'var(--radius-sm)', border:'1px solid var(--border)', cursor:'pointer', transition:'background .15s', flexWrap:'wrap', gap:'.5rem' }}
+                  onMouseEnter={e => e.currentTarget.style.background='var(--p4)'}
+                  onMouseLeave={e => e.currentTarget.style.background='var(--surface2)'}
+                >
+                  <div style={{ flex:1, minWidth:140 }}>
+                    <div style={{ fontWeight:600, color:'var(--text1)', fontSize:'.92rem', marginBottom:'.15rem' }}>{issue.title || 'Untitled'}</div>
+                    <div style={{ fontSize:'.78rem', color:'var(--text3)' }}>{deptName} · {new Date(issue.createdAt).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</div>
+                  </div>
+                  <span style={{ padding:'3px 12px', borderRadius:99, fontSize:'.75rem', fontWeight:700, background:sm.bg, color:sm.color }}>{sm.label}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
     </div>
   );
 }
-
-export default Dashboard;

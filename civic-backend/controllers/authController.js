@@ -26,20 +26,20 @@ exports.register = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// controllers/authController.js — replace the login function
 
-// Login
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
+    const user = await User.findOne({ email }).populate("department", "name"); // ✅ populate
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    if (user.isActive === false) {
+      return res.status(403).json({ message: "Account is deactivated" });
     }
 
     const token = jwt.sign(
@@ -48,7 +48,17 @@ exports.login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res.json({ token });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        departmentId: user.department?._id || null,   // ✅ added
+        departmentName: user.department?.name || null, // ✅ added
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

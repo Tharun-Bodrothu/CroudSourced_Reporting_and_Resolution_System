@@ -37,9 +37,15 @@ mongoose.connect(process.env.MONGO_URI)
 // Routes
 const authRoutes = require("./routes/authRoutes");
 const issueRoutes = require("./routes/issueRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const departmentRoutes = require("./routes/departmentRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/issues", issueRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/department", departmentRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Test Route
 app.get("/", (req, res) => {

@@ -7,6 +7,8 @@ const upload = require("../middleware/upload");
 const {
   createIssue,
   getAllIssues,
+  getMyIssues,
+  getIssueById,
   updateIssueStatus,
   getAnalytics,
   getDepartmentAnalytics,
@@ -47,11 +49,8 @@ router.post(
   upload.single("photo"),
   createIssue
 );
-/* =====================================================
-   ISSUE LISTING
-===================================================== */
-router.get("/all", authMiddleware, getAllIssues);
-router.get("/priority-ranking", authMiddleware, getPriorityRanking);
+
+
 
 /* =====================================================
    ANALYTICS
@@ -63,6 +62,19 @@ router.get(
   getDepartmentAnalytics
 );
 router.get("/analytics/areas", authMiddleware, getAreaAnalytics);
+
+
+
+
+/* =====================================================
+   ISSUE LISTING
+===================================================== */
+router.get("/all", authMiddleware, getAllIssues);
+router.get("/mine", authMiddleware, getMyIssues);
+router.get("/priority-ranking", authMiddleware, getPriorityRanking);
+
+router.get("/:id", authMiddleware, getIssueById);
+
 
 /* =====================================================
    MAP
